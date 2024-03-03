@@ -24,13 +24,8 @@ void SwitchController::openAll(std::vector<std::unique_ptr<Controller>>& control
             }
             pathsSeen.emplace_back(cur_dev->path);
 
-//            // bluetooth, left / right joycon:
-//            if (cur_dev->product_id == JOYCON_L_BT || cur_dev->product_id == JOYCON_R_BT) {
-//                vec.push_back(std::make_unique<SwitchController>(cur_dev));
-//            }
-
-            // pro controller:
-            if (cur_dev->product_id == PRO_CONTROLLER) {
+            // bluetooth, left / right joycon & pro controller:
+            if (cur_dev->product_id == PRO_CONTROLLER || cur_dev->product_id == JOYCON_L_BT || cur_dev->product_id == JOYCON_R_BT) {
                 controllers.emplace_back(std::make_unique<SwitchController>(cur_dev))->claim();
             }
         }
