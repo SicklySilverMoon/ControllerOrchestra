@@ -149,7 +149,7 @@ public:
 
     explicit SwitchController(struct hid_device_info* dev) : joycon{dev} {};
 
-    int numChannels() override { return 1; };
+    int numChannels() override;
 
     bool claim() override;
     void close() override;

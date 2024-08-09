@@ -169,12 +169,12 @@ void playSong(const ParamsStruct params){
 
             //Set note event
             int8_t eventNote = NOTE_STOP;
-            if(MidiFileEvent_isNoteStartEvent(selectedEvent)){
+            if (MidiFileEvent_isNoteStartEvent(selectedEvent)){
                 eventNote = MidiFileNoteStartEvent_getNote(selectedEvent);
             }
 
             //Play notes
-            controller.get()->playNote(currentChannel, eventNote, DURATION_MAX);
+            controller.get()->playNote(currentChannel % 2, eventNote, DURATION_MAX);
             displayPlayedNotes(currentChannel,eventNote);
         }
     }

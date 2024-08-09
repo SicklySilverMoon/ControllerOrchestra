@@ -35,6 +35,14 @@ void SwitchController::openAll(std::vector<std::unique_ptr<Controller>>& control
     hid_free_enumeration(devs);
 }
 
+int SwitchController::numChannels() {
+    if (joycon.control_type == Joycon::TYPE::TYPE_PRO_CONTROLLER) {
+        return 2;
+    } else {
+        return 1;
+    }
+}
+
 bool SwitchController::claim() {
     joycon.init_bt();
     return true;
@@ -56,7 +64,15 @@ int SwitchController::playNote(int side, int note, int duration) {
 
     int rumble = MIDI_TO_RUMBLE_VAL[note];
 
-    joycon.rumble(rumble, 1);
+    if (joycon.control_type != Joycon::TYPE::TYPE_PRO_CONTROLLER) {
+        joycon.rumble(rumble, 1);
+    } else {
+        if (side == 0) {
+            joycon.rumble_l(rumble, 1);
+        } else {
+            joycon.rumble_r(rumble, 1);
+        }
+    }
 
     return 0;
 }

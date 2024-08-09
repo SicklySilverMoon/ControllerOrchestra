@@ -10,7 +10,8 @@ using namespace std;
 #define JOYCON_R_BT 0x2007
 #define PRO_CONTROLLER 0x2009
 #define JOYCON_CHARGING_GRIP 0x200e
-#define L_OR_R(lr) (lr == 1 ? 'L' : (lr == 2 ? 'R' : '?'))
+
+#define INTENSITY_VAL 0x03
 
 class Joycon {
 
@@ -25,7 +26,13 @@ public:
 
 	bool bluetooth = true;
 
-	int left_right = 0;// 1: left joycon, 2: right joycon, 3: pro controller
+    enum class TYPE : int {
+        TYPE_NONE = 0,
+        TYPE_LEFT_JOYCON,
+        TYPE_RIGHT_JOYCON,
+        TYPE_PRO_CONTROLLER,
+    };
+	TYPE control_type = TYPE::TYPE_NONE; // 1: left joycon, 2: right joycon, 3: pro controller
 
 	uint8_t battery;
 
@@ -53,28 +60,28 @@ public:
 		if (dev->product_id == JOYCON_CHARGING_GRIP) {
 			if (dev->interface_number == 0 || dev->interface_number == -1) {
 				this->name = std::string("Joy-Con (R)");
-				this->left_right = 2;// right joycon
+				this->control_type = TYPE::TYPE_RIGHT_JOYCON; // right joycon
 			} else if (dev->interface_number == 1) {
 				this->name = std::string("Joy-Con (L)");
-				this->left_right = 1;// left joycon
+				this->control_type = TYPE::TYPE_LEFT_JOYCON; // left joycon
 			}
 		}
 
 		if (dev->product_id == JOYCON_L_BT) {
 			this->name = std::string("Joy-Con (L)");
-			this->left_right = 1;// left joycon
+			this->control_type = TYPE::TYPE_LEFT_JOYCON; // left joycon
 		} else if (dev->product_id == JOYCON_R_BT) {
 			this->name = std::string("Joy-Con (R)");
-			this->left_right = 2;// right joycon
+			this->control_type = TYPE::TYPE_RIGHT_JOYCON; // right joycon
 		} else if (dev->product_id == PRO_CONTROLLER) {
 			this->name = std::string("Pro Controller");
-			this->left_right = 3;// left joycon
+			this->control_type = TYPE::TYPE_PRO_CONTROLLER;
 		}
 
 		this->serial = wcsdup(dev->serial_number);
 
-		//printf("Found joycon %c %i: %ls %s\n", L_OR_R(this->left_right), joycons.size(), this->serial, dev->path);
-		printf("Found joycon %c: %ls %s\n", L_OR_R(this->left_right), this->serial, dev->path);
+		//printf("Found joycon %c %i: %ls %s\n", L_OR_R(this->control_type), joycons.size(), this->serial, dev->path);
+		printf("Found joycon: %ls %s\n", this->serial, dev->path);
 		this->handle = hid_open_path(dev->path);
 
 
@@ -178,21 +185,64 @@ public:
 		//	buf[1 + intensity] = 0x1;//(i + j) & 0xFF;
 		//}
 
-//		buf[1 + 0 + intensity] = 0x2;
-		buf[1 + 4 + intensity] = 0x2;
+        if (this->control_type == TYPE::TYPE_LEFT_JOYCON) {
+            buf[1 + 0 + intensity] = INTENSITY_VAL;
+        } else if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
+            buf[1 + 4 + intensity] = INTENSITY_VAL;
+        } else { //pro-controller
+            buf[1 + 0 + intensity] = INTENSITY_VAL;
+            buf[1 + 4 + intensity] = INTENSITY_VAL;
+        }
 
 		// Set frequency to increase
-		if (this->left_right == 1) {
-			buf[1 + 0] = frequency;// (0, 255)
-		} else {
-			buf[1 + 4] = frequency;// (0, 255)
-		}
+        if (this->control_type == TYPE::TYPE_LEFT_JOYCON) {
+            buf[1 + 0] = frequency;
+        } else if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
+            buf[1 + 4] = frequency;
+        } else { //pro-controller
+            buf[1 + 0] = frequency;
+            buf[1 + 4] = frequency;
+        }
 
 		// set non-blocking:
 		hid_set_nonblocking(this->handle, 1);
 
-		send_command(0x10, (uint8_t*)buf, 0x9);
+		send_command(0x10, (uint8_t*)buf, 13);
 	}
+
+    void rumble_l(int frequency, int intensity) {
+        unsigned char buf[0x400];
+        memset(buf, 0, 0x40);
+
+        // intensity: (0, 8)
+        // frequency: (0, 255)
+
+        buf[1 + 0 + intensity] = INTENSITY_VAL;
+
+        buf[1 + 0] = frequency;
+
+        // set non-blocking:
+        hid_set_nonblocking(this->handle, 1);
+
+        send_command(0x10, (uint8_t*)buf, 13);
+    }
+
+    void rumble_r(int frequency, int intensity) {
+        unsigned char buf[0x400];
+        memset(buf, 0, 0x40);
+
+        // intensity: (0, 8)
+        // frequency: (0, 255)
+
+        buf[1 + 4 + intensity] = INTENSITY_VAL;
+
+        buf[1 + 4] = frequency;
+
+        // set non-blocking:
+        hid_set_nonblocking(this->handle, 1);
+
+        send_command(0x10, (uint8_t*)buf, 13);
+    }
 
 	void rumble2(uint16_t hf, uint8_t hfa, uint8_t lf, uint16_t lfa) {
 		unsigned char buf[0x400];
@@ -207,7 +257,7 @@ public:
 		//int hf_band = hf + hf_amp;
 
 		int off = 0;// offset
-		if (this->left_right == 2) {
+		if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
 			off = 4;
 		}
 
@@ -261,7 +311,7 @@ public:
 		//int hf_band = hf + hf_amp;
 
 		int off = 0;// offset
-		if (this->left_right == 2) {
+		if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
 			off = 4;
 		}
 
@@ -311,7 +361,7 @@ public:
         uint8_t lf_amp = encoded_hex_amp / 2 + 64;// (encoded_hex_amp>>1)+0x40;
 
         int off = 0;// offset
-        if (this->left_right == 2) {
+        if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
             off = 4;
         }
 
