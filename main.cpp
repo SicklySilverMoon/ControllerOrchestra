@@ -114,7 +114,6 @@ void playSong(const ParamsStruct params){
         long currentTick = MidiFile_getTickFromTime(midifile,timeElapsedSince(tOrigin));
 
         //Every reclaimPeriod seconds, claim the controller to avoid timeouts
-        //todo: reenable
         if(timeElapsedSince(tRestart) > params.reclaimPeriod){
             tRestart = std::chrono::steady_clock::now();
             for (std::unique_ptr<Controller>& controller : controllers) {
@@ -154,8 +153,9 @@ void playSong(const ParamsStruct params){
         std::reference_wrapper<std::unique_ptr<Controller>> controller = controllers[controllerIdx];
         int channelRangeStart = 0;
         //Now play the last events found
+        int controllerNumChannels = controller.get()->numChannels();
         for (int currentChannel = 0; currentChannel < numChannels; currentChannel++) {
-            if (currentChannel - channelRangeStart >= controller.get()->numChannels()) {
+            if (currentChannel - channelRangeStart >= controllerNumChannels) {
                 channelRangeStart = currentChannel;
                 controllerIdx++;
                 controller = controllers[controllerIdx];
@@ -174,7 +174,7 @@ void playSong(const ParamsStruct params){
             }
 
             //Play notes
-            controller.get()->playNote(currentChannel % 2, eventNote, DURATION_MAX);
+            controller.get()->playNote(currentChannel % controllerNumChannels, eventNote, DURATION_MAX);
             displayPlayedNotes(currentChannel,eventNote);
         }
     }
@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
 
     //Parse arguments
     if(!parseArguments(argc, argv, &params)){
-        std::cout << "Usage : steamcontrollersinger [-r][-lDEBUG_LEVEL] [-iINTERVAL] [-cRECLAIM_PERIOD] MIDI_FILE" << std::endl;
+        std::cout << "Usage : controllerorchestra [-r][-lDEBUG_LEVEL] [-iINTERVAL] [-cRECLAIM_PERIOD] MIDI_FILE" << std::endl;
         return 1;
     }
 

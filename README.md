@@ -8,21 +8,21 @@ Projects used include:
   * Including its components of:
   * [fossphate's JoyCon-Driver](https://github.com/fossephate/JoyCon-Driver)
   * [dekuNukem's Nintendo Switch Reverse Engineering](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering/)
-* [HIDAPI](https://github.com/signal11/hidapi) for Switch controllers
-* [libusb](https://github.com/libusb/libusb) for Steam controllers
+* [HIDAPI](https://github.com/signal11/hidapi) (separate install required) for Switch controllers
+* [libusb](https://github.com/libusb/libusb) (separate install required) for Steam controllers
 * [Div's MIDI Utilities - midifile](http://www.sreal.com/~div/midi-utilities/) for MIDI parsing
 
-**Note: Controller Orchestra currently only works on GNU/Linux.**
+**Note: Controller Orchestra currently only works on Linux.**
 
 ## HOW TO
 
 1. Connect your controllers to your PC
-2. Drag the midi file onto controllerorchestra executable
+2. Drag the midi file onto controllerorchestra executable (or use it via terminal)
 3. Enjoy!
 
 ### Where can I find midi songs?
 
-You can find midi songs ready to be played with Steam Controller Singer in my [Personal Collection](https://mega.nz/#F!BWpEWKzB!r7WPw5bZ_domN4pk-FJsjg) (I'll keep updating it with more songs). You can also download midi songs from various websites such [musescore.com](https://musescore.com/), but they may or may not be ready to be played with Steam Controller Singer (see Midi files tips in that case).
+You can find midi songs ready to be played with Steam Controller Singer in my [Pila's Personal Collection](https://mega.nz/#F!BWpEWKzB!r7WPw5bZ_domN4pk-FJsjg) (I'll keep updating it with more songs). You can also download midi songs from various websites such [musescore.com](https://musescore.com/), but they may or may not be ready to be played with Steam Controller Singer (see Midi files tips in that case).
 
 ### Usage from command prompt:
 	controllerorchestra [-r] [-i INTERVAL] [-c RECLAIM_PERIOD] MIDI_FILE
@@ -38,10 +38,10 @@ You can find midi songs ready to be played with Steam Controller Singer in my [P
 Midi files may need to be edited with a software such [MidiEditor](https://www.midieditor.org/) to be correctly played with Controller Orchestra following the next tips:
 
 * Channels are assigned to devices based on the order the program finds the controllers.
-  * It will load 1 Steam controller first with 2 channels (if possible), then as many Switch controllers with 1 channel as possible.
-* So with 1 Steam controller and 2 pro controllers, channels 1 and 2 are Steam controller, 3 and 4 are Pro controllers.
+  * It will load 1 Steam controller first with 2 channels (if possible), then as many Switch controllers as possible.
+* So with 1 Steam controller 1 pro controller, and 2 joycons, channels 1 and 2 are Steam controller, 3 and 4 are the pro controller, and 5 and 6 are the joycons.
 * **Having multiple notes at once on a channel will only play one of them.**
 
 ## Compiling
 
-It uses CMake, its only been tested on a Manjaro device with relevant libs installed already. But it should work on any Linux distro with the correct libs installed.
+It uses CMake, its only been tested on Manjaro and Arch devices with relevant libs installed already. But it should work on any Linux distro with the correct libs (HIDAPI and libusb) installed.
