@@ -83,12 +83,12 @@ void playSong(const ParamsStruct params){
 
     //Check if file contains at least one midi event
     if(MidiFile_getFirstEvent(midifile) == nullptr) {
-        std::cout << "Song file is empty !!" << std::endl;
+        std::cout << "Song file " << params.midiSong << " is empty!!" << std::endl;
         return;
     }
 
     //Waiting for user to press enter
-    std::cout << "Starting playback of " << params.midiSong << std::endl;
+    std::cout << "\nStarting playback of " << params.midiSong << std::endl;
     //sleep(1);
 
     //This will contain the previous events accepted for each channel
@@ -236,7 +236,8 @@ void abortPlaying(int) {
 }
 
 int main(int argc, char** argv) {
-    std::cout << "Steam Controller Singer by Pila" << std::endl;
+    std::cout << "Controller Orchestra by A Sickly Silver Moon, Pila, & Roboron3042\n";
+    std::cout << "    With components by sarossilli, fossphate, dekuNukem, Div, and the devs of HIDAPI & libusb\n" << std::endl;
 
     ParamsStruct params;
     params.intervalUSec = DEFAULT_INTERVAL_USEC;

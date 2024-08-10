@@ -14,6 +14,7 @@ SteamController::SteamController() {
 
     //Open Steam Controller device
     //todo: swap this to libusb_get_device_list and a proper enumeration of it to open all steam controllers (not relevant for us rn)
+    //  actually, see if this can't be swapped to hidapi instead to unify the libs used for switch controllers and steam controllers
     if((dev_handle = libusb_open_device_with_vid_pid(nullptr, 0x28DE, 0x1102)) != nullptr) { // Wired Steam Controller
         std::cout << "Found wired Steam Controller" << std::endl;
         interfaceNum = 2;

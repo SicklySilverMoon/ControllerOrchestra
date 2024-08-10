@@ -11,7 +11,7 @@ using namespace std;
 #define PRO_CONTROLLER 0x2009
 #define JOYCON_CHARGING_GRIP 0x200e
 
-#define INTENSITY_VAL 0x03
+#define INTENSITY_VAL 0x02
 
 class Joycon {
 
