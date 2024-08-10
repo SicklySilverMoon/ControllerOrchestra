@@ -18,6 +18,7 @@
 #include "controllers/Controller.h"
 #include "controllers/SteamController.h"
 #include "controllers/SwitchController.h"
+#include "controllers/PS5Controller.h"
 
 std::vector<std::unique_ptr<Controller>> controllers;
 int numChannels;
@@ -261,6 +262,8 @@ int main(int argc, char** argv) {
 
     SwitchController::openAll(controllers);
 
+//    PS5Controller::openAll(controllers);
+
     for (std::unique_ptr<Controller>& controller : controllers) {
         numChannels += controller->numChannels();
     }
@@ -268,6 +271,10 @@ int main(int argc, char** argv) {
     //Set mechanism to stop playing when closing process
     signal(SIGINT, abortPlaying);
     signal(SIGTERM, abortPlaying);
+
+    if (controllers.empty()) {
+        throw std::runtime_error{"No controllers found"};
+    }
 
     //Playing song
     do {

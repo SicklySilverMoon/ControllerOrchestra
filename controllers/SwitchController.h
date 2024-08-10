@@ -1,5 +1,5 @@
-#ifndef STEAMCONTROLLERSINGER_SWITCHCONTROLLER_H
-#define STEAMCONTROLLERSINGER_SWITCHCONTROLLER_H
+#ifndef CONTROLLERORCHESTRA_SWITCHCONTROLLER_H
+#define CONTROLLERORCHESTRA_SWITCHCONTROLLER_H
 
 #include "Controller.h"
 
@@ -155,8 +155,8 @@ public:
     void close() override;
     void reclaim() override;
     int playNote(int side, int note, int duration) override;
-    void abortNote();
+    void abortNote() override;
 };
 
 
-#endif //STEAMCONTROLLERSINGER_SWITCHCONTROLLER_H
+#endif //CONTROLLERORCHESTRA_SWITCHCONTROLLER_H

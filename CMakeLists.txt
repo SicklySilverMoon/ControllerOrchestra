@@ -14,6 +14,8 @@ set(COMMON_SRCS
         libs/joycon.hpp
         controllers/SwitchController.cpp
         controllers/SwitchController.h
+        controllers/PS5Controller.cpp
+        controllers/PS5Controller.h
 )
 
 add_executable(controllerorchestra ${COMMON_SRCS})
