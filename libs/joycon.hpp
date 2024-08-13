@@ -186,32 +186,35 @@ public:
 		//}
 
         if (this->control_type == TYPE::TYPE_LEFT_JOYCON) {
-            buf[1 + 0 + intensity] = INTENSITY_VAL;
+            rumble_l(frequency, intensity);
         } else if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
-            buf[1 + 4 + intensity] = INTENSITY_VAL;
+            rumble_r(frequency, intensity);
         } else { //pro-controller
-            buf[1 + 0 + intensity] = INTENSITY_VAL;
-            buf[1 + 4 + intensity] = INTENSITY_VAL;
+            rumble_l(frequency, intensity);
+            rumble_r(frequency, intensity);
         }
-
-		// Set frequency to increase
-        if (this->control_type == TYPE::TYPE_LEFT_JOYCON) {
-            buf[1 + 0] = frequency;
-        } else if (this->control_type == TYPE::TYPE_RIGHT_JOYCON) {
-            buf[1 + 4] = frequency;
-        } else { //pro-controller
-            buf[1 + 0] = frequency;
-            buf[1 + 4] = frequency;
-        }
-
-		// set non-blocking:
-		hid_set_nonblocking(this->handle, 1);
-
-		send_command(0x10, (uint8_t*)buf, 13);
 	}
 
+    void rumble_whatever() {
+        uint8_t buff[0x400];
+        memset(buff, 0, 0x40);
+
+        buff[0] = 0x10;
+
+        uint8_t* buf = buff + 1;
+//        buf[2] = 0x7f; //626 Hz
+//        buf[3] = 0x72; //1.0 Amplitude
+
+        buf[0] = 0x00;
+        buf[1] = 0xC8 | 0x01;
+        buf[2] = 0x60;
+//        buf[3] = 0x72;
+
+        send_command(0x10, buff, 9);
+    }
+
     void rumble_l(int frequency, int intensity) {
-        unsigned char buf[0x400];
+        uint8_t buf[0x400];
         memset(buf, 0, 0x40);
 
         // intensity: (0, 8)
@@ -224,11 +227,11 @@ public:
         // set non-blocking:
         hid_set_nonblocking(this->handle, 1);
 
-        send_command(0x10, (uint8_t*)buf, 13);
+        send_command(0x10, buf, 13);
     }
 
     void rumble_r(int frequency, int intensity) {
-        unsigned char buf[0x400];
+        uint8_t buf[0x400];
         memset(buf, 0, 0x40);
 
         // intensity: (0, 8)
@@ -241,7 +244,7 @@ public:
         // set non-blocking:
         hid_set_nonblocking(this->handle, 1);
 
-        send_command(0x10, (uint8_t*)buf, 13);
+        send_command(0x10, buf, 13);
     }
 
 	void rumble2(uint16_t hf, uint8_t hfa, uint8_t lf, uint16_t lfa) {

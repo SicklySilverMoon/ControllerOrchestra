@@ -14,8 +14,7 @@ void SwitchController::openAll(std::vector<std::unique_ptr<Controller>>& control
 
     // Linear search for joycons
     std::vector<std::string> pathsSeen{}; //for some reason the controllers don't disconnect properly and create copies with the same path
-    while (cur_dev)
-    {
+    while (cur_dev) {
         // identify by vendor:
         if (cur_dev->vendor_id == JOYCON_VENDOR) {
             if (std::find(pathsSeen.begin(), pathsSeen.end(), cur_dev->path) != pathsSeen.end()) {
@@ -23,6 +22,12 @@ void SwitchController::openAll(std::vector<std::unique_ptr<Controller>>& control
                 continue;
             }
             pathsSeen.emplace_back(cur_dev->path);
+
+//            SwitchController controller{cur_dev};
+//            controller.claim();
+//            controller.joycon.rumble_whatever();
+//            sleep(3);
+//            exit(1);
 
             // bluetooth, left / right joycon & pro controller:
             if (cur_dev->product_id == PRO_CONTROLLER || cur_dev->product_id == JOYCON_L_BT || cur_dev->product_id == JOYCON_R_BT) {
