@@ -94,7 +94,7 @@ void playSong(const ParamsStruct params){
 
     //This will contain the previous events accepted for each channel
 //    MidiFileEvent_t acceptedEventPerChannel[CHANNEL_COUNT] = {0};
-    std::vector<MidiFileEvent_t> acceptedEventPerChannel{static_cast<size_t>(numChannels)};
+//    std::vector<MidiFileEvent_t> acceptedEventPerChannel{static_cast<size_t>(numChannels)};
 
     //Get current time point, will be used to know elapsed time
     std::chrono::steady_clock::time_point tOrigin = std::chrono::steady_clock::now();
@@ -103,17 +103,19 @@ void playSong(const ParamsStruct params){
     //Iterate through events
     MidiFileEvent_t currentEvent = MidiFile_getFirstEvent(midifile);
 
-    std::vector<MidiFileEvent_t> eventsToPlay{static_cast<size_t>(numChannels)};
+    std::vector<std::pair<Controller*, int>> freeControllers; //Controller and channel num free
+    std::vector<std::tuple<Controller*, int, int, int>> usedControllers; //baby froggie was here
+    //Controller, used controller channel num, proper channel num of playing note, note value of playing note
+    for (std::unique_ptr<Controller>& controller : controllers) {
+        for (int i = 0; i < controller->numChannels(); i++) {
+            freeControllers.emplace_back(controller.get(), i);
+        }
+    }
+
     while (currentEvent != nullptr) {
+        std::vector<MidiFileEvent_t> eventsToPlay;
+
         usleep(params.intervalUSec);
-
-        //This will contains the events to play
-//        MidiFileEvent_t eventsToPlay[CHANNEL_COUNT] = {NULL};
-        std::fill(eventsToPlay.begin(), eventsToPlay.end(), nullptr);
-
-        //We now need to play all events with tick < currentTime
-        long currentTick = MidiFile_getTickFromTime(midifile,timeElapsedSince(tOrigin));
-
         //Every reclaimPeriod seconds, claim the controller to avoid timeouts
         if(timeElapsedSince(tRestart) > params.reclaimPeriod){
             tRestart = std::chrono::steady_clock::now();
@@ -121,6 +123,13 @@ void playSong(const ParamsStruct params){
                 controller->reclaim();
             }
         }
+
+        //This will contains the events to play
+//        MidiFileEvent_t eventsToPlay[CHANNEL_COUNT] = {NULL};
+//        std::fill(eventsToPlay.begin(), eventsToPlay.end(), nullptr);
+
+        //We now need to play all events with tick < currentTime
+        long currentTick = MidiFile_getTickFromTime(midifile,timeElapsedSince(tOrigin));
 
         //Iterate through all events until the current time, and selecte potential events to play
         for( ; currentEvent != nullptr && MidiFileEvent_getTick(currentEvent) < currentTick ; currentEvent = MidiFileEvent_getNextEventInFile(currentEvent)){
@@ -132,52 +141,76 @@ void playSong(const ParamsStruct params){
             int eventChannel = MidiFileVoiceEvent_getChannel(currentEvent);
 
             //If channel is outside the number of channels we can play, skip
-            if(eventChannel < 0 || eventChannel >= numChannels) continue;
+            if(eventChannel < 0/* || eventChannel >= numChannels*/) continue;
 
             //If event is note off and does not match previous played event, skip it
             if(MidiFileEvent_isNoteEndEvent(currentEvent)){
-                MidiFileEvent_t previousEvent = acceptedEventPerChannel[eventChannel];
-
-                //Skip if current event is not ending previous event,
-                // or if they share the same tick ( end event after start evetn on same tick )
-                if(MidiFileNoteStartEvent_getNote(previousEvent) != MidiFileNoteEndEvent_getNote(currentEvent)
-                ||(MidiFileEvent_getTick(currentEvent) == MidiFileEvent_getTick(previousEvent)))
-                    continue;
+//                MidiFileEvent_t previousEvent = acceptedEventPerChannel[eventChannel];
+//
+//                //Skip if current event is not ending previous event,
+//                // or if they share the same tick ( end event after start evetn on same tick )
+//                if(MidiFileNoteStartEvent_getNote(previousEvent) != MidiFileNoteEndEvent_getNote(currentEvent)
+//                ||(MidiFileEvent_getTick(currentEvent) == MidiFileEvent_getTick(previousEvent)))
+//                    continue;
+                int channel = MidiFileNoteEndEvent_getChannel(currentEvent);
+                int note = MidiFileNoteEndEvent_getNote(currentEvent);
+                for (auto itr = usedControllers.begin(); itr != usedControllers.end(); itr++) {
+                    if (std::get<2>(*itr) == channel && std::get<3>(*itr) == note) {
+                        std::get<0>(*itr)->playNote(std::get<2>(*itr), NOTE_STOP, DURATION_MAX);
+                        freeControllers.emplace_back(std::get<0>(*itr), std::get<1>(*itr));
+                        usedControllers.erase(itr);
+                        break;
+                    }
+                }
+                continue;
             }
 
             //If we arrive here, this event is accepted
-            eventsToPlay[eventChannel] = currentEvent;
-            acceptedEventPerChannel[eventChannel]=currentEvent;
+            eventsToPlay.push_back(currentEvent);
+//            acceptedEventPerChannel[eventChannel]=currentEvent;
         }
 
-        size_t controllerIdx = 0;
-        std::reference_wrapper<std::unique_ptr<Controller>> controller = controllers[controllerIdx];
-        int channelRangeStart = 0;
-        //Now play the last events found
-        int controllerNumChannels = controller.get()->numChannels();
-        for (int currentChannel = 0; currentChannel < numChannels; currentChannel++) {
-            if (currentChannel - channelRangeStart >= controllerNumChannels) {
-                channelRangeStart = currentChannel;
-                controllerIdx++;
-                controller = controllers[controllerIdx];
+        for (MidiFileEvent_t event : eventsToPlay) {
+            if (freeControllers.empty()) {
+                break;
             }
-
-            MidiFileEvent_t selectedEvent = eventsToPlay[currentChannel];
-
-            //If no note event available on the channel, skip it
-            if (!MidiFileEvent_isNoteEvent(selectedEvent))
-                continue;
-
-            //Set note event
-            int8_t eventNote = NOTE_STOP;
-            if (MidiFileEvent_isNoteStartEvent(selectedEvent)){
-                eventNote = MidiFileNoteStartEvent_getNote(selectedEvent);
-            }
-
-            //Play notes
-            controller.get()->playNote(currentChannel % controllerNumChannels, eventNote, DURATION_MAX);
-            displayPlayedNotes(currentChannel,eventNote);
+            int channel = MidiFileNoteStartEvent_getChannel(event);
+            int note = MidiFileNoteStartEvent_getNote(event);
+            auto controllerPair = freeControllers.begin();
+            controllerPair->first->playNote(controllerPair->second, note, DURATION_MAX);
+//            displayPlayedNotes(channel,note);
+            usedControllers.emplace_back(controllerPair->first, controllerPair->second, channel, note);
+            freeControllers.erase(controllerPair);
         }
+
+//        size_t controllerIdx = 0;
+//        std::reference_wrapper<std::unique_ptr<Controller>> controller = controllers[controllerIdx];
+//        int channelRangeStart = 0;
+//        //Now play the last events found
+//        int controllerNumChannels = controller.get()->numChannels();
+//        for (int currentChannel = 0; currentChannel < numChannels; currentChannel++) {
+//            if (currentChannel - channelRangeStart >= controllerNumChannels) {
+//                channelRangeStart = currentChannel;
+//                controllerIdx++;
+//                controller = controllers[controllerIdx];
+//            }
+//
+//            MidiFileEvent_t selectedEvent = eventsToPlay[currentChannel];
+//
+//            //If no note event available on the channel, skip it
+//            if (!MidiFileEvent_isNoteEvent(selectedEvent))
+//                continue;
+//
+//            //Set note event
+//            int8_t eventNote = NOTE_STOP;
+//            if (MidiFileEvent_isNoteStartEvent(selectedEvent)){
+//                eventNote = MidiFileNoteStartEvent_getNote(selectedEvent);
+//            }
+//
+//            //Play notes
+//            controller.get()->playNote(currentChannel % controllerNumChannels, eventNote, DURATION_MAX);
+//            displayPlayedNotes(currentChannel,eventNote);
+//        }
     }
 
     std::cout <<std::endl<< "Playback completed " << std::endl;
