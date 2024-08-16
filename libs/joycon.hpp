@@ -387,7 +387,7 @@ public:
         send_command(0x10, (uint8_t*)byte, 0x9);
     }
 
-	int init_bt() {
+	int init_bt(bool log = true) {
 
 		this->bluetooth = true;
 
@@ -399,12 +399,14 @@ public:
 		hid_set_nonblocking(this->handle, 0);
 
 		// Enable vibration
-		printf("Enabling vibration...\n");
+        if (log)
+    		printf("Enabling vibration...\n");
 		buf[0] = 0x01; // Enabled
 		send_subcommand(0x1, 0x48, buf, 1);
 
 		// Enable IMU data
-		printf("Enabling IMU data...\n");
+	    if (log)
+    		printf("Enabling IMU data...\n");
 		buf[0] = 0x01; // Enabled
 		send_subcommand(0x01, 0x40, buf, 1);
 
@@ -417,13 +419,15 @@ public:
 		// x23	MCU update input report ?
 		// 30	NPad standard mode. Pushes current state @60Hz. Default in SDK if arg is not in the list
 		// 31	NFC mode. Pushes large packets @60Hz
-		printf("Set input report mode to 0x30...\n");
+        if (log)
+    		printf("Set input report mode to 0x30...\n");
 		buf[0] = 0x30;
 		send_subcommand(0x01, 0x03, buf, 1);
 
 		// @CTCaer
 
-		printf("Successfully initialized %s!\n", this->name.c_str());
+        if (log)
+    		printf("Successfully initialized %s!\n", this->name.c_str());
 
 		return 0;
 	}
